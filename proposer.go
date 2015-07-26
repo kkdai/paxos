@@ -1,5 +1,7 @@
 package paxos
 
+import "log"
+
 func NewProposer(id int, val string, nt nodeNetwork, accetors ...int) *proposer {
 	pro := proposer{id: id, proposeVal: val, seq: 0, nt: nt}
 	for _, acceptor := range accetors {
@@ -18,6 +20,7 @@ type proposer struct {
 
 //Detail process for Proposor.
 func (p *proposer) run() {
+	//Stage1: Proposor send prepare message to acceptor to reach accept from majority.
 	for p.majorityReached() {
 
 		outMsgs := p.prepare()
@@ -29,7 +32,19 @@ func (p *proposer) run() {
 		for m != nil {
 			continue
 		}
+		switch m.typ {
+		case Propose:
+			p.checkRecvPromise(*m)
+		default:
+			panic("Unsupport message.")
+		}
+	}
 
+	//Stage2: Proposor send propose value to acceptor to learn.
+	log.Println("Proposor propose seq:", p.proposeNum(), " value:", p.proposeVal)
+	proposeMsgs := p.propose()
+	for _, msg := range proposeMsgs {
+		p.nt.send(msg)
 	}
 }
 
@@ -65,6 +80,17 @@ func (p *proposer) prepare() []message {
 // Proposor will propose value to those accpetors and let them know the consusence alreay ready.
 func (p *proposer) propose() []message {
 	return p.prepareMajorityMessages(Prepare, p.proposeVal)
+}
+
+func (p *proposer) checkRecvPromise(promise message) {
+	previousPromise := p.acceptors[promise.from]
+	if previousPromise.getProposeSeq() < promise.getProposeSeq() {
+		log.Println("Proposor:", p.id, " get new promise:", promise)
+		p.acceptors[promise.from] = promise
+		if promise.getProposeSeq() > p.proposeNum() {
+			p.proposeVal = promise.getProposeVal()
+		}
+	}
 }
 
 func (p *proposer) majority() int {
