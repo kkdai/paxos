@@ -18,10 +18,6 @@ type message struct {
 	val    string
 }
 
-func (m *message) getSeqNumber() int {
-	return m.seq
-}
-
 func (m *message) getProposeVal() string {
 	return m.val
 }
@@ -32,9 +28,11 @@ func (m *message) getProposeSeq() int {
 	case Promise:
 		return m.preSeq
 	case Accept:
+	case Propose:
 		return m.seq
 	default:
 		panic("Don't support message typ")
 
 	}
+	return 0
 }

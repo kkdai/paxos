@@ -13,6 +13,7 @@ func NewProposer(id int, val string, nt nodeNetwork, accetors ...int) *proposer 
 type proposer struct {
 	id         int
 	seq        int
+	proposeNum int
 	proposeVal string
 	acceptors  map[int]message
 	nt         nodeNetwork
@@ -41,7 +42,7 @@ func (p *proposer) run() {
 	}
 
 	//Stage2: Proposor send propose value to acceptor to learn.
-	log.Println("Proposor propose seq:", p.proposeNum(), " value:", p.proposeVal)
+	log.Println("Proposor propose seq:", p.getProposeNum(), " value:", p.proposeVal)
 	proposeMsgs := p.propose()
 	for _, msg := range proposeMsgs {
 		p.nt.send(msg)
@@ -52,8 +53,8 @@ func (p *proposer) prepareMajorityMessages(stag msgType, val string) []message {
 	sendMsgCount := 0
 	var msgList []message
 	for acepId, acepMsg := range p.acceptors {
-		if acepMsg.getSeqNumber() == p.proposeNum() {
-			msg := message{from: p.id, to: acepId, typ: stag, seq: p.proposeNum()}
+		if acepMsg.getProposeSeq() == p.getProposeNum() {
+			msg := message{from: p.id, to: acepId, typ: stag, seq: p.getProposeNum()}
 			//Only need value on propose, not in prepare
 			if stag == Propose {
 				msg.val = val
@@ -87,7 +88,8 @@ func (p *proposer) checkRecvPromise(promise message) {
 	if previousPromise.getProposeSeq() < promise.getProposeSeq() {
 		log.Println("Proposor:", p.id, " get new promise:", promise)
 		p.acceptors[promise.from] = promise
-		if promise.getProposeSeq() > p.proposeNum() {
+		if promise.getProposeSeq() > p.getProposeNum() {
+			p.proposeNum = promise.getProposeSeq()
 			p.proposeVal = promise.getProposeVal()
 		}
 	}
@@ -100,7 +102,7 @@ func (p *proposer) majority() int {
 func (p *proposer) getRecevPromiseCount() int {
 	recvCount := 0
 	for _, acepMsg := range p.acceptors {
-		if acepMsg.getProposeSeq() == p.proposeNum() {
+		if acepMsg.getProposeSeq() == p.getProposeNum() {
 			recvCount++
 		}
 	}
@@ -111,6 +113,7 @@ func (p *proposer) majorityReached() bool {
 	return p.getRecevPromiseCount() > p.majority()
 }
 
-func (p *proposer) proposeNum() int {
-	return p.seq<<4 | p.id
+func (p *proposer) getProposeNum() int {
+	p.proposeNum = p.seq<<4 | p.id
+	return p.proposeNum
 }
