@@ -34,7 +34,6 @@ func (a *acceptor) run() {
 		case Propose:
 			accepted := a.recevPropose(*m)
 			if accepted {
-
 				for _, lId := range a.learners {
 					m.from = a.id
 					m.to = lId
