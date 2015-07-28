@@ -1,8 +1,13 @@
 package paxos
 
-import "testing"
+import (
+	"log"
+	"testing"
+	"time"
+)
 
 func TestBasicNetwork(t *testing.T) {
+	log.Println("TestBasicNetowk........................")
 	nt := CreateNetwork(1, 3, 5, 2, 4)
 	go func() {
 		nt.recevFrom(5)
@@ -18,4 +23,32 @@ func TestBasicNetwork(t *testing.T) {
 	nt.sendTo(m2)
 	m3 := message{from: 4, to: 2, typ: Promise, seq: 3, preSeq: 2, val: "m3"}
 	nt.sendTo(m3)
+}
+
+func TestProserFunction(t *testing.T) {
+	log.Println("TestProserFunction........................")
+	//Three acceptor and one proposer
+	network := CreateNetwork(100, 1, 2, 3)
+
+	//Create acceptors
+	var acceptors []acceptor
+	aId := 1
+	for aId <= 3 {
+		log.Println(" acceptor ", aId, " created")
+		acctor := NewAcceptor(aId, network.getNodeNetwork(aId), 0)
+		acceptors = append(acceptors, acctor)
+		aId++
+	}
+
+	//Create proposer
+	proposer := NewProposer(100, "value1", network.getNodeNetwork(100), 1, 2, 3)
+
+	//Run proposer and acceptors
+	go proposer.run()
+
+	for index, _ := range acceptors {
+		log.Println("acceptor ", acceptors[index].id, " run..")
+		go acceptors[index].run()
+	}
+	time.Sleep(time.Second)
 }

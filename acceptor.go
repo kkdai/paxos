@@ -2,8 +2,8 @@ package paxos
 
 import "log"
 
-func NewAcceptor(id int, nt nodeNetwork, learners ...int) *acceptor {
-	newAccptor := &acceptor{id: id, nt: nt}
+func NewAcceptor(id int, nt nodeNetwork, learners ...int) acceptor {
+	newAccptor := acceptor{id: id, nt: nt}
 	newAccptor.learners = learners
 	return newAccptor
 }
@@ -17,29 +17,36 @@ type acceptor struct {
 }
 
 //Acceptor process detail logic.
-func (a *accept) run() {
+func (a *acceptor) run() {
 	for {
-		m := a.nt.receive()
+		log.Println("acceptor:", a.id, " wait to recev msg")
+		m := a.nt.recev()
+		if m == nil {
+			continue
+		}
+
+		log.Println("acceptor:", a.id, " recev message ", *m)
 		switch m.typ {
 		case Prepare:
-			promiseMsg := a.recevPrepare(m)
-			a.nt.send(promiseMsg)
+			promiseMsg := a.recevPrepare(*m)
+			a.nt.send(*promiseMsg)
 			continue
 		case Propose:
-			accepted := a.recevPropose(m)
+			accepted := a.recevPropose(*m)
 			if accepted {
 
-				for _, learner := range learners {
-					m.aafrom = a.id
-					m.to = learner
+				for _, lId := range a.learners {
+					m.from = a.id
+					m.to = lId
 					m.typ = Accept
-					a.nt.send(m)
+					a.nt.send(*m)
 				}
 			}
 		default:
 			log.Fatalln("Unsupport message in accpetor ID:", a.id)
 		}
 	}
+	log.Println("accetor :", a.id, " leave.")
 }
 
 //After acceptor receive prepare message.
@@ -62,7 +69,7 @@ func (a *acceptor) recevPrepare(prepare message) *message {
 //Otherwise, will just forward this message out and change its type to "Accept" to learning later.
 func (a *acceptor) recevPropose(proposeMsg message) bool {
 	//Already accept bigger propose before
-	if a.acceptMsg.getProposeSeq() > proposeMsg.getProposeSeq() || a.acceptMsg.getProposeSeq() < promiseMsg.getProposeSeq() {
+	if a.acceptMsg.getProposeSeq() > proposeMsg.getProposeSeq() || a.acceptMsg.getProposeSeq() < proposeMsg.getProposeSeq() {
 		log.Println("ID:", a.id, " acceptor not take propose:", proposeMsg.val)
 		return false
 	}

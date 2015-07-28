@@ -19,6 +19,10 @@ type network struct {
 	recvQueue map[int]chan message
 }
 
+func (n *network) getNodeNetwork(id int) nodeNetwork {
+	return nodeNetwork{id: id, net: n}
+}
+
 func (n *network) sendTo(m message) {
 	log.Println("Send msg from:", m.from, " send to", m.to, " val:", m.val)
 	n.recvQueue[m.to] <- m

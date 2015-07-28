@@ -1,5 +1,7 @@
 package paxos
 
+import "log"
+
 type msgType int
 
 const (
@@ -29,9 +31,11 @@ func (m *message) getProposeSeq() int {
 		return m.preSeq
 	case Accept:
 	case Propose:
+	case Prepare:
 		return m.seq
 	default:
-		panic("Don't support message typ")
+		log.Println("Don't support message typ:", m.typ, " from:", m.from)
+		//panic("Don't support message typ:", m.typ, " from:", m.from)
 
 	}
 	return 0
