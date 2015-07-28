@@ -56,13 +56,11 @@ func (a *acceptor) recevPrepare(prepare message) *message {
 		log.Println("ID:", a.id, "Already accept bigger one")
 		return nil
 	}
-	log.Println("ID:", a.id, "Accept ")
-
-	a.promiseMsg = message{typ: Promise,
-		from: a.id,
-		to:   prepare.from,
-		seq:  prepare.seq}
-	return &a.promiseMsg
+	log.Println("ID:", a.id, " Promise")
+	prepare.to = prepare.from
+	prepare.from = a.id
+	prepare.typ = Promise
+	return &prepare
 }
 
 //Recev Propose only check if acceptor already accept bigger propose before.
@@ -73,5 +71,6 @@ func (a *acceptor) recevPropose(proposeMsg message) bool {
 		log.Println("ID:", a.id, " acceptor not take propose:", proposeMsg.val)
 		return false
 	}
+	log.Println("ID:", a.id, " Accept")
 	return true
 }

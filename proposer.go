@@ -5,9 +5,8 @@ import "log"
 func NewProposer(id int, val string, nt nodeNetwork, accetors ...int) *proposer {
 	pro := proposer{id: id, proposeVal: val, seq: 0, nt: nt}
 	pro.acceptors = make(map[int]message, len(accetors))
-	log.Println("proposer has ", len(accetors), " acceptors")
+	log.Println("proposer has ", len(accetors), " acceptors, val:", pro.proposeVal)
 	for _, acceptor := range accetors {
-		log.Println("proposer add acceptor id:", acceptor)
 		pro.acceptors[acceptor] = message{}
 	}
 	return &pro
@@ -24,6 +23,7 @@ type proposer struct {
 
 //Detail process for Proposor.
 func (p *proposer) run() {
+	log.Println("Proposer start run... val:", p.proposeVal)
 	//Stage1: Proposor send prepare message to acceptor to reach accept from majority.
 	for !p.majorityReached() {
 		log.Println("[Proposer:Prepare]")
@@ -34,13 +34,16 @@ func (p *proposer) run() {
 			log.Println("[Proposer: send", msg)
 		}
 
+		log.Println("[Proposer: prepare recev..")
 		m := p.nt.recev()
 		for m == nil {
+			log.Println("[Proposer: no msg... ")
 			continue
 		}
 		log.Println("[Proposer: recev", m)
 		switch m.typ {
-		case Propose:
+		case Promise:
+			log.Println(" proposer recev a promise from ", m.from)
 			p.checkRecvPromise(*m)
 		default:
 			panic("Unsupport message.")
@@ -56,17 +59,18 @@ func (p *proposer) run() {
 	}
 }
 
-func (p *proposer) prepareMajorityMessages(stag msgType, val string) []message {
+// After receipt the promise from acceptor and reach majority.
+// Proposor will propose value to those accpetors and let them know the consusence alreay ready.
+func (p *proposer) propose() []message {
 	sendMsgCount := 0
 	var msgList []message
-	log.Println("proposer: prepare major msg:", len(p.acceptors))
+	log.Println("proposer: propose msg:", len(p.acceptors))
 	for acepId, acepMsg := range p.acceptors {
+		log.Println("check promise id:", acepMsg.getProposeSeq(), p.getProposeNum())
 		if acepMsg.getProposeSeq() == p.getProposeNum() {
-			msg := message{from: p.id, to: acepId, typ: stag, seq: p.getProposeNum()}
-			//Only need value on propose, not in prepare
-			if stag == Propose {
-				msg.val = val
-			}
+			msg := message{from: p.id, to: acepId, typ: Propose, seq: p.getProposeNum()}
+			msg.val = p.proposeVal
+			log.Println("Propose val:", msg.val)
 			msgList = append(msgList, msg)
 		}
 		sendMsgCount++
@@ -74,7 +78,7 @@ func (p *proposer) prepareMajorityMessages(stag msgType, val string) []message {
 			break
 		}
 	}
-	log.Println(" proposer msg list:", msgList)
+	log.Println(" proposer propose msg list:", msgList)
 	return msgList
 }
 
@@ -88,8 +92,7 @@ func (p *proposer) prepare() []message {
 	var msgList []message
 	log.Println("proposer: prepare major msg:", len(p.acceptors))
 	for acepId, _ := range p.acceptors {
-		msg := message{from: p.id, to: acepId, typ: Prepare, seq: p.getProposeNum()}
-		//Only need value on propose, not in prepare
+		msg := message{from: p.id, to: acepId, typ: Prepare, seq: p.getProposeNum(), val: p.proposeVal}
 		msgList = append(msgList, msg)
 		sendMsgCount++
 		if sendMsgCount > p.majority() {
@@ -99,14 +102,10 @@ func (p *proposer) prepare() []message {
 	return msgList
 }
 
-// After receipt the promise from acceptor and reach majority.
-// Proposor will propose value to those accpetors and let them know the consusence alreay ready.
-func (p *proposer) propose() []message {
-	return p.prepareMajorityMessages(Prepare, p.proposeVal)
-}
-
 func (p *proposer) checkRecvPromise(promise message) {
 	previousPromise := p.acceptors[promise.from]
+	log.Println(" prevMsg:", previousPromise, " promiseMsg:", promise)
+	log.Println(previousPromise.getProposeSeq(), promise.getProposeSeq())
 	if previousPromise.getProposeSeq() < promise.getProposeSeq() {
 		log.Println("Proposor:", p.id, " get new promise:", promise)
 		p.acceptors[promise.from] = promise
@@ -124,10 +123,13 @@ func (p *proposer) majority() int {
 func (p *proposer) getRecevPromiseCount() int {
 	recvCount := 0
 	for _, acepMsg := range p.acceptors {
+		log.Println(" proposer has total ", len(p.acceptors), " acceptor ", acepMsg, " current Num:", p.getProposeNum(), " msgNum:", acepMsg.getProposeSeq())
 		if acepMsg.getProposeSeq() == p.getProposeNum() {
+			log.Println("recv ++", recvCount)
 			recvCount++
 		}
 	}
+	log.Println("Current proposer recev promise count=", recvCount)
 	return recvCount
 }
 

@@ -23,6 +23,9 @@ func TestBasicNetwork(t *testing.T) {
 	nt.sendTo(m2)
 	m3 := message{from: 4, to: 2, typ: Promise, seq: 3, preSeq: 2, val: "m3"}
 	nt.sendTo(m3)
+
+	m4 := message{from: 4, to: 2, typ: Promise, seq: 3, preSeq: 2, val: "m4"}
+	nt.sendTo(m4)
 }
 
 func TestProserFunction(t *testing.T) {
@@ -34,7 +37,6 @@ func TestProserFunction(t *testing.T) {
 	var acceptors []acceptor
 	aId := 1
 	for aId <= 3 {
-		log.Println(" acceptor ", aId, " created")
 		acctor := NewAcceptor(aId, network.getNodeNetwork(aId), 0)
 		acceptors = append(acceptors, acctor)
 		aId++
@@ -47,8 +49,7 @@ func TestProserFunction(t *testing.T) {
 	go proposer.run()
 
 	for index, _ := range acceptors {
-		log.Println("acceptor ", acceptors[index].id, " run..")
 		go acceptors[index].run()
 	}
-	time.Sleep(time.Second)
+	time.Sleep(10 * time.Second)
 }
