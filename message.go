@@ -3,10 +3,10 @@ package paxos
 type msgType int
 
 const (
-	Prepare msgType = iota + 1
-	Promise         //2
-	Propose         //3
-	Accept          //4
+	Prepare msgType = iota + 1 // Send from proposer -> acceptor
+	Promise                    // Send from acceptor -> proposer
+	Propose                    // Send from proposer -> acceptor
+	Accept                     // Send from acceptor -> learner
 )
 
 type message struct {
@@ -23,16 +23,5 @@ func (m *message) getProposeVal() string {
 }
 
 func (m *message) getProposeSeq() int {
-
-	switch m.typ {
-	case Promise:
-		return m.seq
-	case Accept:
-	case Propose:
-	case Prepare:
-		return m.seq
-	default:
-		//log.Println("Don't support message typ:", m.typ, " from:", m.from)
-	}
-	return 0
+	return m.seq
 }

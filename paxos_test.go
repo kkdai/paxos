@@ -14,7 +14,10 @@ func TestBasicNetwork(t *testing.T) {
 		nt.recevFrom(1)
 		nt.recevFrom(3)
 		nt.recevFrom(2)
-		nt.recevFrom(4)
+		m := nt.recevFrom(4)
+		if m == nil {
+			t.Errorf("No message detected.")
+		}
 	}()
 
 	m1 := message{from: 3, to: 1, typ: Prepare, seq: 1, preSeq: 0, val: "m1"}
@@ -23,21 +26,19 @@ func TestBasicNetwork(t *testing.T) {
 	nt.sendTo(m2)
 	m3 := message{from: 4, to: 2, typ: Promise, seq: 3, preSeq: 2, val: "m3"}
 	nt.sendTo(m3)
-
-	m4 := message{from: 4, to: 2, typ: Promise, seq: 3, preSeq: 2, val: "m4"}
-	nt.sendTo(m4)
+	time.Sleep(time.Second)
 }
 
-func TestProserFunction(t *testing.T) {
+func TestSingleProser(t *testing.T) {
 	log.Println("TestProserFunction........................")
 	//Three acceptor and one proposer
-	network := CreateNetwork(100, 1, 2, 3)
+	network := CreateNetwork(100, 1, 2, 3, 200)
 
 	//Create acceptors
 	var acceptors []acceptor
 	aId := 1
 	for aId <= 3 {
-		acctor := NewAcceptor(aId, network.getNodeNetwork(aId), 0)
+		acctor := NewAcceptor(aId, network.getNodeNetwork(aId), 200)
 		acceptors = append(acceptors, acctor)
 		aId++
 	}
@@ -51,5 +52,11 @@ func TestProserFunction(t *testing.T) {
 	for index, _ := range acceptors {
 		go acceptors[index].run()
 	}
-	time.Sleep(10 * time.Second)
+
+	//Create learner and learner will wait until reach majority.
+	learner := NewLearner(200, network.getNodeNetwork(200), 1, 2, 3)
+	learnValue := learner.run()
+	if learnValue != "value1" {
+		t.Errorf("Learner learn wrong proposal.")
+	}
 }

@@ -34,10 +34,9 @@ func (n *network) recevFrom(id int) *message {
 		log.Println("Recev msg from:", retMsg.from, " send to", retMsg.to, " val:", retMsg.val, " typ:", retMsg.typ)
 		return &retMsg
 	case <-time.After(time.Second):
-		log.Println("id:", id, " don't get message.. time out.")
+		//log.Println("id:", id, " don't get message.. time out.")
 		return nil
 	}
-
 }
 
 type nodeNetwork struct {

@@ -2,6 +2,9 @@ package paxos
 
 import "log"
 
+//Create a accetor and also assign learning IDs into acceptor.
+//Acceptor: Will response request from proposer, promise the first and largest seq number propose.
+//          After proposer reach the majority promise.  Acceptor will pass the proposal value to learner to confirn and choose.
 func NewAcceptor(id int, nt nodeNetwork, learners ...int) acceptor {
 	newAccptor := acceptor{id: id, nt: nt}
 	newAccptor.learners = learners
@@ -19,13 +22,13 @@ type acceptor struct {
 //Acceptor process detail logic.
 func (a *acceptor) run() {
 	for {
-		log.Println("acceptor:", a.id, " wait to recev msg")
+		//	log.Println("acceptor:", a.id, " wait to recev msg")
 		m := a.nt.recev()
 		if m == nil {
 			continue
 		}
 
-		log.Println("acceptor:", a.id, " recev message ", *m)
+		//	log.Println("acceptor:", a.id, " recev message ", *m)
 		switch m.typ {
 		case Prepare:
 			promiseMsg := a.recevPrepare(*m)
@@ -59,6 +62,7 @@ func (a *acceptor) recevPrepare(prepare message) *message {
 	prepare.to = prepare.from
 	prepare.from = a.id
 	prepare.typ = Promise
+	a.acceptMsg = prepare
 	return &prepare
 }
 
@@ -66,6 +70,7 @@ func (a *acceptor) recevPrepare(prepare message) *message {
 //Otherwise, will just forward this message out and change its type to "Accept" to learning later.
 func (a *acceptor) recevPropose(proposeMsg message) bool {
 	//Already accept bigger propose before
+	log.Println("accept:check propose. ", a.acceptMsg.getProposeSeq(), proposeMsg.getProposeSeq())
 	if a.acceptMsg.getProposeSeq() > proposeMsg.getProposeSeq() || a.acceptMsg.getProposeSeq() < proposeMsg.getProposeSeq() {
 		log.Println("ID:", a.id, " acceptor not take propose:", proposeMsg.val)
 		return false
