@@ -60,3 +60,42 @@ func TestSingleProser(t *testing.T) {
 		t.Errorf("Learner learn wrong proposal.")
 	}
 }
+
+func TestTwoProsers(t *testing.T) {
+	log.Println("TestProserFunction........................")
+	//Three acceptor and one proposer
+	network := CreateNetwork(100, 1, 2, 3, 200, 101)
+
+	//Create acceptors
+	var acceptors []acceptor
+	aId := 1
+	for aId <= 3 {
+		acctor := NewAcceptor(aId, network.getNodeNetwork(aId), 200)
+		acceptors = append(acceptors, acctor)
+		aId++
+	}
+
+	//Create proposer 1
+	proposer1 := NewProposer(100, "ExpectValue", network.getNodeNetwork(100), 1, 2, 3)
+	//Run proposer and acceptors
+	go proposer1.run()
+
+	//Need sleep to make sure first proposer reach majority
+	time.Sleep(time.Millisecond)
+
+	//Create proposer 2
+	proposer2 := NewProposer(101, "WrongValue", network.getNodeNetwork(101), 1, 2, 3)
+	//Run proposer and acceptors
+	go proposer2.run()
+
+	for index, _ := range acceptors {
+		go acceptors[index].run()
+	}
+
+	//Create learner and learner will wait until reach majority.
+	learner := NewLearner(200, network.getNodeNetwork(200), 1, 2, 3)
+	learnValue := learner.run()
+	if learnValue != "ExpectValue" {
+		t.Errorf("Learner learn wrong proposal. Expect:'ExpectValue'")
+	}
+}

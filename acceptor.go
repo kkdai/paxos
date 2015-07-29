@@ -69,7 +69,7 @@ func (a *acceptor) recevPrepare(prepare message) *message {
 //Recev Propose only check if acceptor already accept bigger propose before.
 //Otherwise, will just forward this message out and change its type to "Accept" to learning later.
 func (a *acceptor) recevPropose(proposeMsg message) bool {
-	//Already accept bigger propose before
+	//Already accept message is identical with previous promise message
 	log.Println("accept:check propose. ", a.acceptMsg.getProposeSeq(), proposeMsg.getProposeSeq())
 	if a.acceptMsg.getProposeSeq() > proposeMsg.getProposeSeq() || a.acceptMsg.getProposeSeq() < proposeMsg.getProposeSeq() {
 		log.Println("ID:", a.id, " acceptor not take propose:", proposeMsg.val)
