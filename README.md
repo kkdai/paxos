@@ -9,6 +9,11 @@ It is the [Paxos](http://research.microsoft.com/en-us/um/people/lamport/pubs/pax
 - [https://github.com/xiang90/paxos](https://github.com/xiang90/paxos)
 - [https://github.com/kr/paxos](https://github.com/kr/paxos)
 
+Project52
+---------------
+
+It is one of my [project 52](https://github.com/kkdai/project52).
+
 
 License
 ---------------
