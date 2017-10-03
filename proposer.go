@@ -36,7 +36,7 @@ func (p *proposer) run() {
 
 		log.Println("[Proposer: prepare recev..")
 		m := p.nt.recev()
-		for m == nil {
+		if m == nil {
 			log.Println("[Proposer: no msg... ")
 			continue
 		}
