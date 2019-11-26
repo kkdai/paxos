@@ -81,12 +81,13 @@ func TestTwoProsers(t *testing.T) {
 	go proposer1.run()
 
 	//Need sleep to make sure first proposer reach majority
-	time.Sleep(time.Millisecond)
 
 	//Create proposer 2
 	proposer2 := NewProposer(101, "WrongValue", network.getNodeNetwork(101), 1, 2, 3)
 	//Run proposer and acceptors
-	go proposer2.run()
+	time.AfterFunc(time.Second, func() {
+		proposer2.run()
+	})
 
 	for index, _ := range acceptors {
 		go acceptors[index].run()
@@ -96,6 +97,6 @@ func TestTwoProsers(t *testing.T) {
 	learner := NewLearner(200, network.getNodeNetwork(200), 1, 2, 3)
 	learnValue := learner.run()
 	if learnValue != "ExpectValue" {
-		t.Errorf("Learner learn wrong proposal. Expect:'ExpectValue'")
+		t.Errorf("Learner learn wrong proposal. Expect:'ExpectValue', learnValue: %v", learnValue)
 	}
 }
